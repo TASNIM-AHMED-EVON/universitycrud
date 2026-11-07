@@ -33,7 +33,7 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         // Role-based access control:
                         .requestMatchers("/api/admins/**").hasRole("ADMIN")
-                        .requestMatchers("/api/teachers/**").hasAnyRole("ADMIN", "TEACHER" , "STUDENT")
+                        .requestMatchers("/api/teachers/**").hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers("/api/students/**").hasAnyRole("ADMIN", "STUDENT")
                         .anyRequest().authenticated())
 

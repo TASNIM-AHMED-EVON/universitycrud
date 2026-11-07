@@ -32,7 +32,7 @@ public class UserRules {
     }
 
     public String requirePassword(String rawPassword) {
-        if (rawPassword == null || rawPassword.isBlank()) {
+        if (rawPassword == null) {
             throw new BadRequestException("Password is required when creating a user");
         }
         return rawPassword;
