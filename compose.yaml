@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ums-db
+    environment:
+      POSTGRES_DB: ums
+      POSTGRES_USER: ums_user
+      POSTGRES_PASSWORD: ums_pass
+    volumes:
+      - ums-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build: .
+    container_name: ums-app
+    depends_on:
+      db:
+        condition: service_healthy   # start the app only after PostgreSQL is ready
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ums
+      SPRING_DATASOURCE_USERNAME: ums_user
+      SPRING_DATASOURCE_PASSWORD: ums_pass
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin123
+    restart: unless-stopped
+
+volumes:
+  ums-data:

@@ -1,0 +1,15 @@
+# Used by the integration tests (@ActiveProfiles("test")): in-memory H2, no PostgreSQL needed.
+spring:
+  datasource:
+    url: jdbc:h2:mem:ums-test;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+app:
+  admin:
+    username: admin
+    password: admin123

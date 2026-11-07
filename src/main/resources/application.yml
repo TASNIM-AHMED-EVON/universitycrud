@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: university-management
+  # Defaults are for a local PostgreSQL. In Docker Compose these are overridden
+  # by the SPRING_DATASOURCE_* environment variables.
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ums
+    username: ums_user
+    password: ums_pass
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+# Default admin that is created on first start if no admin exists yet.
+# CHANGE THE PASSWORD (env var ADMIN_PASSWORD) for anything beyond a lab demo.
+app:
+  admin:
+    username: ${ADMIN_USERNAME:admin}
+    password: ${ADMIN_PASSWORD:admin123}
+    full-name: System Administrator
+    email: admin@university.local

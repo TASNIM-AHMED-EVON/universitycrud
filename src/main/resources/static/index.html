@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>University Management System</title>
+<style>
+  :root { --bg:#f4f6fb; --card:#fff; --ink:#1f2937; --muted:#6b7280; --brand:#2563eb; --ok:#16a34a; --err:#dc2626; --line:#e5e7eb; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--ink); }
+  header { background:var(--brand); color:#fff; padding:14px 24px; display:flex; justify-content:space-between; align-items:center; }
+  header h1 { font-size:18px; margin:0; }
+  main { max-width:1100px; margin:24px auto; padding:0 16px; }
+  .card { background:var(--card); border-radius:10px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,.08); margin-bottom:20px; }
+  h2 { margin:0 0 14px; font-size:16px; }
+  label { display:block; font-size:13px; color:var(--muted); margin-bottom:4px; }
+  input { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:14px; }
+  button { background:var(--brand); color:#fff; border:0; padding:8px 14px; border-radius:6px; cursor:pointer; font-size:14px; }
+  button.secondary { background:#e5e7eb; color:var(--ink); }
+  button.danger { background:var(--err); }
+  button.small { padding:4px 10px; font-size:12px; }
+  .login { max-width:360px; margin:60px auto; }
+  .login .row { margin-bottom:12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:14px; }
+  .tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .tabs button { background:#e5e7eb; color:var(--ink); }
+  .tabs button.active { background:var(--brand); color:#fff; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:8px; border-bottom:1px solid var(--line); }
+  th { color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; }
+  .msg { padding:10px 12px; border-radius:6px; margin-bottom:12px; font-size:14px; }
+  .msg.ok { background:#dcfce7; color:#166534; }
+  .msg.err { background:#fee2e2; color:#991b1b; }
+  .hint { color:var(--muted); font-size:13px; }
+  .user { font-size:14px; display:flex; align-items:center; gap:12px; }
+  .badge { background:rgba(255,255,255,.2); padding:2px 8px; border-radius:10px; font-size:12px; }
+  #log { max-height:240px; overflow:auto; font-family: ui-monospace, Consolas, monospace; font-size:12px; }
+  #log div { padding:4px 0; border-bottom:1px solid var(--line); word-break:break-all; }
+  .s2 { color:var(--ok); font-weight:700; } .s4 { color:var(--err); font-weight:700; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>University Management System</h1>
+  <div class="user hidden" id="userBox">
+    <span id="who"></span><span class="badge" id="roleBadge"></span>
+    <button class="secondary small" id="logoutBtn">Logout</button>
+  </div>
+</header>
+
+<main>
+  <!-- LOGIN -->
+  <div id="loginView" class="card login hidden">
+    <h2>Login</h2>
+    <form id="loginForm">
+      <div class="row"><label for="lu">Username</label><input id="lu" autocomplete="username" required></div>
+      <div class="row"><label for="lp">Password</label><input id="lp" type="password" autocomplete="current-password" required></div>
+      <div id="loginMsg" class="msg err hidden"></div>
+      <button type="submit">Log in</button>
+      <p class="hint">Default admin: admin / admin123</p>
+    </form>
+  </div>
+
+  <!-- APP -->
+  <div id="appView" class="hidden">
+    <div class="tabs" id="tabs"></div>
+    <div id="msg" class="msg hidden"></div>
+
+    <div class="card">
+      <h2 id="formTitle"></h2>
+      <form id="form">
+        <div class="grid" id="fields"></div>
+        <button type="submit" id="saveBtn">Save</button>
+        <button type="button" class="secondary" id="cancelBtn">Cancel</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2 id="listTitle"></h2>
+      <div style="overflow-x:auto" id="tableWrap"></div>
+    </div>
+
+    <div class="card">
+      <h2>Request log (what the API answered)</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const RES = {
+  admins: { label: 'Admin', fields: [
+    { n:'username', l:'Username', t:'text', req:true },
+    { n:'password', l:'Password', t:'password' },
+    { n:'fullName', l:'Full name', t:'text', req:true },
+    { n:'email', l:'Email', t:'email', req:true } ]},
+  teachers: { label: 'Teacher', fields: [
+    { n:'username', l:'Username', t:'text', req:true },
+    { n:'password', l:'Password', t:'password' },
+    { n:'fullName', l:'Full name', t:'text', req:true },
+    { n:'email', l:'Email', t:'email', req:true },
+    { n:'department', l:'Department', t:'text' },
+    { n:'designation', l:'Designation', t:'text' } ]},
+  students: { label: 'Student', fields: [
+    { n:'username', l:'Username', t:'text', req:true },
+    { n:'password', l:'Password', t:'password' },
+    { n:'fullName', l:'Full name', t:'text', req:true },
+    { n:'email', l:'Email', t:'email', req:true },
+    { n:'studentRoll', l:'Student roll', t:'text', req:true },
+    { n:'department', l:'Department', t:'text' },
+    { n:'semester', l:'Semester (1-12)', t:'number' } ]}
+};
+
+let me = null, current = null, editingId = null, rows = [];
+
+/* ---------- API helper ---------- */
+async function call(method, url, body, silent) {
+  const opt = { method, headers: {}, credentials: 'same-origin' };
+  if (body !== undefined) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
+  const res = await fetch(url, opt);
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+  if (!silent) log(method, url, res.status, data);
+  return { ok: res.ok, status: res.status, data };
+}
+
+function log(method, url, status, data) {
+  const d = document.createElement('div');
+  const cls = status < 300 ? 's2' : 's4';
+  d.innerHTML = '<span class="' + cls + '">' + status + '</span> ' + esc(method) + ' ' + esc(url) +
+    (data ? ' &rarr; ' + esc(typeof data === 'string' ? data : JSON.stringify(data)) : '');
+  $('log').prepend(d);
+}
+
+function showMsg(text, ok) {
+  const m = $('msg');
+  m.textContent = text;
+  m.className = 'msg ' + (ok ? 'ok' : 'err');
+}
+function hideMsg() { $('msg').className = 'msg hidden'; }
+
+function errorText(r) {
+  let t = r.status + ' ' + ((r.data && r.data.message) || 'Request failed');
+  if (r.data && r.data.fieldErrors) {
+    t += ' (' + Object.entries(r.data.fieldErrors).map(([k, v]) => k + ': ' + v).join('; ') + ')';
+  }
+  return t;
+}
+
+/* ---------- login / logout ---------- */
+function showLogin() {
+  me = null;
+  $('loginView').classList.remove('hidden');
+  $('appView').classList.add('hidden');
+  $('userBox').classList.add('hidden');
+}
+
+function showApp() {
+  $('loginView').classList.add('hidden');
+  $('appView').classList.remove('hidden');
+  $('userBox').classList.remove('hidden');
+  $('who').textContent = me.fullName + ' (' + me.username + ')';
+  $('roleBadge').textContent = me.role;
+  buildTabs();
+  const first = me.role === 'TEACHER' ? 'teachers' : me.role === 'STUDENT' ? 'students' : 'admins';
+  selectTab(first);
+}
+
+$('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const r = await call('POST', '/api/auth/login', { username: $('lu').value, password: $('lp').value });
+  if (r.ok) {
+    me = r.data;
+    $('loginMsg').classList.add('hidden');
+    $('lp').value = '';
+    showApp();
+  } else {
+    $('loginMsg').textContent = (r.data && r.data.message) || 'Login failed';
+    $('loginMsg').classList.remove('hidden');
+  }
+});
+
+$('logoutBtn').addEventListener('click', async () => {
+  await call('POST', '/api/auth/logout');
+  showLogin();
+});
+
+/* ---------- tabs ---------- */
+function buildTabs() {
+  $('tabs').innerHTML = '';
+  Object.keys(RES).forEach(key => {
+    const b = document.createElement('button');
+    b.textContent = RES[key].label + 's';
+    b.dataset.key = key;
+    b.addEventListener('click', () => selectTab(key));
+    $('tabs').appendChild(b);
+  });
+}
+
+function selectTab(key) {
+  current = key;
+  editingId = null;
+  hideMsg();
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.key === key));
+  buildForm();
+  loadList();
+}
+
+/* ---------- form ---------- */
+function buildForm() {
+  const cfg = RES[current];
+  $('formTitle').textContent = editingId ? 'Edit ' + cfg.label.toLowerCase() + ' #' + editingId : 'Add new ' + cfg.label.toLowerCase();
+  $('cancelBtn').classList.toggle('hidden', !editingId);
+  $('fields').innerHTML = cfg.fields.map(f =>
+    '<div><label for="f_' + f.n + '">' + esc(f.l) + (f.req ? ' *' : '') + '</label>' +
+    '<input id="f_' + f.n + '" type="' + f.t + '"' + (f.req ? ' required' : '') +
+    (f.n === 'password' ? ' autocomplete="new-password" placeholder="' + (editingId ? 'leave blank to keep' : 'min 6 characters') + '"' : '') +
+    '></div>'
+  ).join('');
+}
+
+$('form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const body = {};
+  RES[current].fields.forEach(f => {
+    const raw = $('f_' + f.n).value;
+    if (f.n === 'password') { if (raw !== '') body.password = raw; return; }
+    const v = raw.trim();
+    if (f.t === 'number') body[f.n] = v === '' ? null : Number(v);
+    else body[f.n] = v === '' ? null : v;
+  });
+  const url = '/api/' + current;
+  const r = editingId ? await call('PUT', url + '/' + editingId, body) : await call('POST', url, body);
+  if (r.ok) {
+    showMsg(editingId ? 'Updated successfully (' + r.status + ')' : 'Created successfully (' + r.status + ')', true);
+    editingId = null;
+    buildForm();
+    loadList();
+  } else {
+    showMsg(errorText(r), false);
+  }
+});
+
+$('cancelBtn').addEventListener('click', () => { editingId = null; hideMsg(); buildForm(); });
+
+function startEdit(id) {
+  const row = rows.find(x => x.id === id);
+  if (!row) return;
+  editingId = id;
+  buildForm();
+  RES[current].fields.forEach(f => {
+    if (f.n !== 'password') $('f_' + f.n).value = row[f.n] ?? '';
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function removeRow(id) {
+  if (!confirm('Delete #' + id + '?')) return;
+  const r = await call('DELETE', '/api/' + current + '/' + id);
+  if (r.ok) { showMsg('Deleted (' + r.status + ')', true); loadList(); }
+  else showMsg(errorText(r), false);
+}
+
+/* ---------- list ---------- */
+async function loadList() {
+  $('listTitle').textContent = RES[current].label + 's';
+  const r = await call('GET', '/api/' + current);
+  if (!r.ok) {
+    rows = [];
+    $('tableWrap').innerHTML = '<div class="msg err">' + esc(errorText(r)) + '</div>';
+    return;
+  }
+  rows = r.data;
+  const cols = ['id'].concat(RES[current].fields.filter(f => f.n !== 'password').map(f => f.n));
+  if (rows.length === 0) { $('tableWrap').innerHTML = '<p class="hint">No records yet.</p>'; return; }
+  let html = '<table><thead><tr>' + cols.map(c => '<th>' + esc(c) + '</th>').join('') + '<th></th></tr></thead><tbody>';
+  rows.forEach(row => {
+    html += '<tr>' + cols.map(c => '<td>' + esc(row[c]) + '</td>').join('') +
+      '<td><button class="small" data-edit="' + row.id + '">Edit</button> ' +
+      '<button class="small danger" data-del="' + row.id + '">Delete</button></td></tr>';
+  });
+  $('tableWrap').innerHTML = html + '</tbody></table>';
+}
+
+$('tableWrap').addEventListener('click', e => {
+  const t = e.target;
+  if (t.dataset.edit) startEdit(Number(t.dataset.edit));
+  if (t.dataset.del) removeRow(Number(t.dataset.del));
+});
+
+/* ---------- start ---------- */
+(async function init() {
+  const r = await call('GET', '/api/auth/me', undefined, true);
+  if (r.ok) { me = r.data; showApp(); } else { showLogin(); }
+})();
+</script>
+</body>
+</html>
