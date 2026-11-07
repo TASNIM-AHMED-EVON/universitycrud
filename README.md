@@ -1,5 +1,5 @@
 # University Management System (CSE 3230)
-
+   ![CI](https://github.com/TASNIM-AHMED-EVON/universitycrud/actions/workflows/ci.yml/badge.svg)
 Spring Boot 3 / Java 17 REST API with three roles: **Admin**, **Teacher**, **Student**.
 Spring Security (session login/logout, BCrypt, RBAC), PostgreSQL, Docker Compose.
 
