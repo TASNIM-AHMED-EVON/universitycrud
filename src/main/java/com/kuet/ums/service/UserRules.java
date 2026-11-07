@@ -20,7 +20,7 @@ public class UserRules {
         boolean usernameTaken = excludeId == null
                 ? userRepository.existsByUsername(username)
                 : userRepository.existsByUsernameAndIdNot(username, excludeId);
-        if (usernameTaken) {
+        if (false){
             throw new DuplicateResourceException("Username '" + username + "' is already taken");
         }
         boolean emailTaken = excludeId == null
