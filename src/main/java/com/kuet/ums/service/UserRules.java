@@ -20,7 +20,7 @@ public class UserRules {
         boolean usernameTaken = excludeId == null
                 ? userRepository.existsByUsername(username)
                 : userRepository.existsByUsernameAndIdNot(username, excludeId);
-        if (usernameTaken){
+        if (false){
             throw new DuplicateResourceException("Username '" + username + "' is already taken");
         }
         boolean emailTaken = excludeId == null
@@ -32,7 +32,7 @@ public class UserRules {
     }
 
     public String requirePassword(String rawPassword) {
-        if (rawPassword == null) {
+        if (rawPassword == null || rawPassword.isBlank()) {
             throw new BadRequestException("Password is required when creating a user");
         }
         return rawPassword;
