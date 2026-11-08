@@ -1,6 +1,6 @@
 # University Management System (CSE 3230)
    ![CI](https://github.com/TASNIM-AHMED-EVON/universitycrud/actions/workflows/ci.yml/badge.svg)
-Spring Boot 3 / Java 17 REST API with three roles: **Admin**, **Teacher**, **Student**.
+Spring Boot 3 / Java 25 REST API with three roles: **Admin**, **Teacher**, **Student**.
 Spring Security (session login/logout, BCrypt, RBAC), PostgreSQL, Docker Compose.
 
 ## Run with Docker (recommended)
@@ -16,7 +16,7 @@ Stop: `docker compose down` (add `-v` to also delete the database volume).
 
 ## Run without Docker (H2 in-memory DB)
 
-Needs JDK 17+ and Maven.
+Needs JDK 25 and Maven.
 
 ```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=local
