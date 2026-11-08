@@ -14,8 +14,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import java.io.IOException;
 
 @Configuration
@@ -39,8 +38,7 @@ public class SecurityConfig {
 
                 // Logout: POST /api/auth/logout destroys the session
                 .logout(logout -> logout
-                        .logoutRequestMatcher(new AntPathRequestMatcher("/api/auth/logout", HttpMethod.POST.name()))
-                        .invalidateHttpSession(true)
+.logoutRequestMatcher(PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/api/auth/logout"))                        .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID")
                         .logoutSuccessHandler((request, response, authentication) -> {
